@@ -1,33 +1,26 @@
-const { DataTypes } = require('sequelize');
-
-module.exports = (sequelize) => {
+module.exports = (sequelize, Sequelize) => {
   const Item = sequelize.define('Item', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    name: {
-      type: DataTypes.STRING
-    },
-    price: {
-      type: DataTypes.DECIMAL(10, 2)
-    },
-    stock: {
-      type: DataTypes.INTEGER
-    },
-    created_at: {
-      type: DataTypes.DATE
-    },
-    updated_at: {
-      type: DataTypes.DATE
-    }
-  }, {
-    timestamps: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at',
-    tableName: 'items'
+      name: {
+          type: Sequelize.STRING,
+          allowNull: false,
+      },
+      description: {
+          type: Sequelize.STRING,
+      },
+      price: {
+          type: Sequelize.FLOAT,
+          allowNull: false,
+      },
+  },{
+      timestamps: true
   });
 
+  // Relationships
+  Item.associate = function(models) {
+      Item.belongsTo(models.Category);
+      Item.belongsToMany(models.Cart, { through: models.CartItem });
+      Item.belongsToMany(models.Order, { through: models.OrderItem });
+  };
+
   return Item;
-};
+}

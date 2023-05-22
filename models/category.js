@@ -1,27 +1,18 @@
-const { DataTypes } = require('sequelize');
-
-module.exports = (sequelize) => {
+module.exports = (sequelize, Sequelize) => {
   const Category = sequelize.define('Category', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    name: {
-      type: DataTypes.STRING
-    },
-    created_at: {
-      type: DataTypes.DATE
-    },
-    updated_at: {
-      type: DataTypes.DATE
-    }
-  }, {
-    timestamps: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at',
-    tableName: 'categories'
+      name: {
+          type: Sequelize.STRING,
+          allowNull: false,
+          unique: true,
+      },
+  },{
+      timestamps: true
   });
 
+  // Relationships
+  Category.associate = function(models) {
+      Category.hasMany(models.Item);
+  };
+
   return Category;
-};
+}

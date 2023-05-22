@@ -1,34 +1,38 @@
-const { DataTypes } = require('sequelize');
+const bcrypt = require('bcrypt');
 
-module.exports = (sequelize) => {
-  const User = sequelize.define('User', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    username: {
-      type: DataTypes.STRING,
-      unique: true
-    },
-    password: {
-      type: DataTypes.STRING
-    },
-    email: {
-      type: DataTypes.STRING
-    },
-    created_at: {
-      type: DataTypes.DATE
-    },
-    updated_at: {
-      type: DataTypes.DATE
-    }
-  }, {
-    timestamps: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at',
-    tableName: 'users'
-  });
+module.exports = (sequelize, Sequelize) => {
+    const User = sequelize.define('User', {
+        fullName: {
+            type: Sequelize.STRING,
+            allowNull: false
+        },
+        username: {
+            type: Sequelize.STRING,
+            allowNull: false,
+            unique: true,
+        },
+        password: {
+            type: Sequelize.STRING,
+            allowNull: false,
+            set(value) {
+                const hash = bcrypt.hashSync(value, 10);
+                this.setDataValue('password', hash);
+            },
+        },
+        role: {
+            type: Sequelize.STRING,
+            defaultValue: "member",
+            allowNull: false
+        }
+    },{
+        timestamps: true
+    });
+    
+    //Relationships
+    User.associate = function(models) {
+        User.hasOne(models.Role);
+        User.hasMany(models.Order);
+    };
 
-  return User;
-};
+    return User;
+}
