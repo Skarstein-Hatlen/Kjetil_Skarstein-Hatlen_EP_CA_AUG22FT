@@ -44,6 +44,7 @@ router.post('/setup', async (req, res) => {
         const adminRole = await Role.findOne({ where: { name: 'Admin' } });
         const hashedPassword = await bcrypt.hash('P@ssword2023', 10);
         await User.create({
+            fullName: 'Admin User',
             username: 'Admin',
             password: hashedPassword,
             roleId: adminRole.id,
