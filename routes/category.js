@@ -3,7 +3,8 @@ var router = express.Router();
 var { Category } = require('../models');
 
 // Authentication and role check middleware
-var { authenticate, authRole } = require('../middlewares/authMiddleware');
+const authenticate = require('../middlewares/authMiddleware');
+const authRole = require('../middlewares/authRole');
 
 // Category endpoints
 router.get('/categories', async (req, res) => {

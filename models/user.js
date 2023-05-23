@@ -30,7 +30,7 @@ module.exports = (sequelize, Sequelize) => {
     
     //Relationships
     User.associate = function(models) {
-        User.hasOne(models.Role);
+        User.belongsTo(models.Role);
         User.hasMany(models.Order);
     };
 
