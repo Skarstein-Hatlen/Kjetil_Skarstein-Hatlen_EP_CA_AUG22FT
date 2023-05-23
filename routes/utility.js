@@ -42,10 +42,15 @@ router.post('/setup', async (req, res) => {
 
         // Create Admin user
         const adminRole = await Role.findOne({ where: { name: 'Admin' } });
+        if (!adminRole) {
+            return res.status(500).json({ message: 'Admin role not found.' });
+        }
+
         const hashedPassword = await bcrypt.hash('P@ssword2023', 10);
         await User.create({
             fullName: 'Admin User',
             username: 'Admin',
+            email: 'admin@user.com',
             password: hashedPassword,
             roleId: adminRole.id,
         });
@@ -56,8 +61,6 @@ router.post('/setup', async (req, res) => {
         return res.status(500).json({ message: 'An error occurred while populating the database.', error: process.env.NODE_ENV === 'development' ? error : {} });
     }
 });
-
-
 
 // Search (Might need change)
 router.post('/search', async (req, res) => {

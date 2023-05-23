@@ -9,7 +9,7 @@ const router = express.Router();
 // Signup endpoint
 router.post('/signup', async (req, res) => {
     try {
-        const { username, password, email } = req.body;
+        const { fullName, username, password, email } = req.body;
         // Check if username already exists
         const existingUser = await User.findOne({ where: { username } });
         if (existingUser) {
@@ -24,10 +24,11 @@ router.post('/signup', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         // Create new user
         const newUser = await User.create({
+            fullName,
             username,
-            password: hashedPassword,
             email,
-            role: 'Registered User'
+            password: hashedPassword,
+            roleId: 2
         });
         // Generate JWT token
         const token = jwt.sign({ id: newUser.id, role: newUser.role }, process.env.JWT_SECRET, {

@@ -11,6 +11,11 @@ module.exports = (sequelize, Sequelize) => {
             allowNull: false,
             unique: true,
         },
+        email: {
+            type: Sequelize.STRING,
+            allowNull: false,
+            unique: true,
+        },
         password: {
             type: Sequelize.STRING,
             allowNull: false,
@@ -18,11 +23,6 @@ module.exports = (sequelize, Sequelize) => {
                 const hash = bcrypt.hashSync(value, 10);
                 this.setDataValue('password', hash);
             },
-        },
-        role: {
-            type: Sequelize.STRING,
-            defaultValue: "member",
-            allowNull: false
         }
     },{
         timestamps: true
@@ -30,7 +30,7 @@ module.exports = (sequelize, Sequelize) => {
     
     //Relationships
     User.associate = function(models) {
-        User.belongsTo(models.Role);
+        User.belongsTo(models.Role, { foreignKey: 'roleId' });
         User.hasMany(models.Order);
     };
 
