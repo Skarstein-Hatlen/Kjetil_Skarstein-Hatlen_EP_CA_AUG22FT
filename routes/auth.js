@@ -40,4 +40,29 @@ router.post('/signup', async (req, res) => {
     }
 });
 
+// Login endpoint
+router.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        // Check if the user exists
+        const user = await User.findOne({ where: { username } });
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid username or password.' });
+        }
+        // Compare passwords
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        if (!passwordMatch) {
+            return res.status(401).json({ message: 'Invalid username or password.' });
+        }
+        // Generate JWT token
+        const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
+            expiresIn: '2h'
+        });
+        return res.json({ message: 'User logged in successfully.', user, token });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'An error occurred during login.', error });
+    }
+});
+
 module.exports = router;
