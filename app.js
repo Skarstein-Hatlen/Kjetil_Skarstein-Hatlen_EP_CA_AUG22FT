@@ -7,6 +7,12 @@ var logger = require('morgan');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var authRouter = require('./routes/auth');
+var itemsRouter = require('./routes/items');
+var ordersRouter = require('./routes/orders');
+var categoryRouter = require('./routes/category');
+var cartRouter = require('./routes/cart');
+var utilityRouter = require('./routes/utility');
 
 var db = require('./models');
 db.sequelize.sync({ force: false });
@@ -24,6 +30,12 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
+app.use('/', authRouter)
+app.use('/', itemsRouter)
+app.use('/', ordersRouter)
+app.use('/', categoryRouter)
+app.use('/', cartRouter)
+app.use('/', utilityRouter)
 app.use('/users', usersRouter);
 
 // catch 404 and forward to error handler
