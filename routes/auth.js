@@ -1,7 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-const { User, Role } = require('../models');
+const { User, Role, Cart } = require('../models');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 const router = express.Router();
@@ -18,8 +18,7 @@ router.post('/signup', async (req, res) => {
         if (emailCount >= 4) {
             return res.status(400).json({ message: 'Email has been used too many times.' });
         }
-        const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
-        console.log('Signup Hashed password: ', hashedPassword); //debug log
+        const hashedPassword = crypto.createHash('sha256').update(password.trim()).digest('hex');
         const userRole = await Role.findOne({ where: { name: 'User' } });
         if (!userRole) {
             return res.status(500).json({ message: 'User role not found.' });
@@ -31,6 +30,10 @@ router.post('/signup', async (req, res) => {
             password: hashedPassword,
             roleId: userRole.id
         });
+        const newCart = await Cart.create();
+        await newUser.setCart(newCart);
+
+        //Nødvendig?
         const token = jwt.sign({ id: newUser.id, role: newUser.roleId }, process.env.JWT_SECRET, {
             expiresIn: '2h'
         });
@@ -41,18 +44,18 @@ router.post('/signup', async (req, res) => {
     }
 });
 
-// Login endpoint
+
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
         const user = await User.findOne({ where: { username } });
-        console.log(user);
+        console.log("Fetched user from DB:", user);  // debug log
         if (!user) {
             return res.status(401).json({ message: 'Invalid username or password.' });
         }
-        const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+        const hashedPassword = crypto.createHash('sha256').update(password.trim()).digest('hex');
+        console.log("Hashed password from request:", hashedPassword);  // debug log
         const passwordMatch = (hashedPassword === user.password);
-        console.log('Login Hashed password from DB: ', user.password); //debug log
         console.log('Login Password match: ', passwordMatch); //debug log
         if (!passwordMatch) {
             return res.status(401).json({ message: 'Invalid username or password.' });
@@ -66,5 +69,6 @@ router.post('/login', async (req, res) => {
         return res.status(500).json({ message: 'An error occurred during login.', error });
     }
 });
+
 
 module.exports = router;

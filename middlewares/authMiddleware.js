@@ -19,7 +19,7 @@ const authMiddleware = async (req, res, next) => {
             if (!dbUser) {
                 return res.status(404).send('User not found');
             }
-            req.user = dbUser;
+            req.user = { id: dbUser.id, role: dbUser.roleId };
             next();
         });
     } catch (error) {
