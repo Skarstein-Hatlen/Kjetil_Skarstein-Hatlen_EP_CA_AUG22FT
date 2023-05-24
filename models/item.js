@@ -14,7 +14,7 @@ module.exports = (sequelize, Sequelize) => {
 
     // Relationships
     Item.associate = function(models) {
-        Item.belongsTo(models.Category);
+        Item.belongsTo(models.Category, { foreignKey: 'categoryId' });
         Item.belongsToMany(models.Cart, { through: models.CartItem });
         Item.belongsToMany(models.Order, { through: models.OrderItem });
     };

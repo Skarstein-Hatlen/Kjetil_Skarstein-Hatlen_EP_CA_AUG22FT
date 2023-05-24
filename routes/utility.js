@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Op } = require('sequelize');
 const { Item, Category, Role, User } = require('../models');
-const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const fetch = require('node-fetch');
 
 router.post('/setup', async (req, res) => {
@@ -11,8 +11,6 @@ router.post('/setup', async (req, res) => {
         if (itemsCount > 0) {
             return res.status(400).json({ message: 'Database already populated.' });
         }
-
-        // Populate items and categories from Noroff API
         const response = await fetch('http://143.42.108.232:8888/items/stock');
         if (!response.ok) {
             throw new Error('Network response was not ok');
@@ -34,19 +32,17 @@ router.post('/setup', async (req, res) => {
             });
         }
 
-        // Populate roles table
         await Role.bulkCreate([
             { name: 'Admin' },
             { name: 'User' },
         ]);
 
-        // Create Admin user
         const adminRole = await Role.findOne({ where: { name: 'Admin' } });
         if (!adminRole) {
             return res.status(500).json({ message: 'Admin role not found.' });
         }
 
-        const hashedPassword = await bcrypt.hash('P@ssword2023', 10);
+        const hashedPassword = crypto.createHash('sha256').update('P@ssword2023').digest('hex');
         await User.create({
             fullName: 'Admin User',
             username: 'Admin',
@@ -62,7 +58,6 @@ router.post('/setup', async (req, res) => {
     }
 });
 
-// Search (Might need change)
 router.post('/search', async (req, res) => {
     try {
         const { searchQuery } = req.body;

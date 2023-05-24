@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 
 module.exports = (sequelize, Sequelize) => {
     const User = sequelize.define('User', {
@@ -20,15 +20,14 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.STRING,
             allowNull: false,
             set(value) {
-                const hash = bcrypt.hashSync(value, 10);
+                const hash = crypto.createHash('sha256').update(value).digest('hex');
                 this.setDataValue('password', hash);
             },
         }
     },{
         timestamps: true
     });
-    
-    //Relationships
+
     User.associate = function(models) {
         User.belongsTo(models.Role, { foreignKey: 'roleId' });
         User.hasMany(models.Order);
