@@ -18,7 +18,6 @@ router.post('/signup', async (req, res) => {
         if (emailCount >= 4) {
             return res.status(400).json({ message: 'Email has been used too many times.' });
         }
-        const hashedPassword = crypto.createHash('sha256').update(password.trim()).digest('hex');
         const userRole = await Role.findOne({ where: { name: 'User' } });
         if (!userRole) {
             return res.status(500).json({ message: 'User role not found.' });
@@ -27,48 +26,51 @@ router.post('/signup', async (req, res) => {
             fullName,
             username,
             email,
-            password: hashedPassword,
-            roleId: userRole.id
+            password,
+            roleId: userRole.id,
         });
         const newCart = await Cart.create();
         await newUser.setCart(newCart);
 
-        //Nødvendig?
-        const token = jwt.sign({ id: newUser.id, role: newUser.roleId }, process.env.JWT_SECRET, {
-            expiresIn: '2h'
-        });
-        return res.json({ message: 'User registered successfully.', user: newUser, token });
+        return res.json({ message: 'User registered successfully.', user: newUser });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: 'An error occurred during registration.', error });
     }
 });
 
-
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        const user = await User.findOne({ where: { username } });
-        console.log("Fetched user from DB:", user);  // debug log
+
+        // Fetch the user from the database and include the Role model
+        const user = await User.findOne({ 
+            where: { username }, 
+            include: {
+                model: Role
+            }
+        });
         if (!user) {
             return res.status(401).json({ message: 'Invalid username or password.' });
         }
-        const hashedPassword = crypto.createHash('sha256').update(password.trim()).digest('hex');
-        console.log("Hashed password from request:", hashedPassword);  // debug log
-        const passwordMatch = (hashedPassword === user.password);
-        console.log('Login Password match: ', passwordMatch); //debug log
-        if (!passwordMatch) {
+
+        // Use the salt to hash the input password
+        const hashedPassword = crypto.pbkdf2Sync(password, user.salt, 1000, 64, 'sha256').toString('hex');
+
+        // Check if the hashed input password matches the stored hash
+        if (hashedPassword !== user.password) {
             return res.status(401).json({ message: 'Invalid username or password.' });
         }
-        const token = jwt.sign({ id: user.id, role: user.roleId }, process.env.JWT_SECRET, {
-            expiresIn: '2h'
-        });
+
+        // If the password is correct, sign and return a JWT
+        const token = jwt.sign({ id: user.id, role: user.Role.name }, process.env.JWT_SECRET, { expiresIn: '2h' });
         return res.json({ message: 'User logged in successfully.', user, token });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: 'An error occurred during login.', error });
     }
 });
+
 
 
 module.exports = router;

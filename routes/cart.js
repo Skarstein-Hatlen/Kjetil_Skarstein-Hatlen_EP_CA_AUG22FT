@@ -1,6 +1,6 @@
 const express = require('express');
 const { Op } = require('sequelize');
-const { Cart, CartItem, Item, User } = require('../models');
+const { Cart, CartItem, Item, User, sequelize } = require('../models');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 const router = express.Router();
@@ -9,20 +9,18 @@ const router = express.Router();
 router.get('/cart', authMiddleware, async (req, res) => {
     try {
         const { userId } = req.user;
-
         // Find the cart for the logged-in user
         const cart = await Cart.findOne({
             where: { userId },
             include: {
                 model: CartItem,
+                as: 'cartItems',
                 include: Item
             }
         });
-
         if (!cart) {
             return res.status(404).json({ message: 'Cart not found.' });
         }
-
         return res.json({ cart });
     } catch (error) {
         console.error(error);
@@ -30,64 +28,67 @@ router.get('/cart', authMiddleware, async (req, res) => {
     }
 });
 
+
 // Get all carts (accessible by Admin user)
 router.get('/allcarts', authMiddleware, async (req, res) => {
     try {
-        const { userId, role } = req.user;
+        const { id, role } = req.user;
 
         if (role !== 'Admin') {
             return res.status(403).json({ message: 'Access denied.' });
         }
 
-        // Fetch all carts with users' full names
-        const carts = await Cart.findAll({
-            include: [
-                {
-                    model: User,
-                    attributes: ['firstName', 'lastName']
-                },
-                {
-                    model: CartItem,
-                    include: Item
-                }
-            ]
-        });
+        const [results, metadata] = await sequelize.query(`
+            SELECT Carts.id, Users.fullName, Items.name, CartItems.quantity, CartItems.price 
+            FROM Carts
+            JOIN Users ON Carts.userId = Users.id
+            JOIN CartItems ON CartItems.cartId = Carts.id
+            JOIN Items ON CartItems.itemId = Items.id
+        `);
 
-        return res.json({ carts });
+        return res.json({ carts: results });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: 'An error occurred while fetching all carts.', error });
     }
 });
 
+
+
 // Add item to the cart (accessible by Registered User)
 router.post('/cart_item', authMiddleware, async (req, res) => {
     try {
         const { userId } = req.user;
         const { itemId, quantity } = req.body;
-        // Check if the item exists
         const item = await Item.findOne({ where: { id: itemId } });
         if (!item) {
             return res.status(404).json({ message: 'Item not found.' });
         }
-        // Check if the item is in stock
-        if (item.stock < quantity) {
-            return res.status(400).json({ message: 'Item is out of stock.' });
+        if (item.stock_quantity < quantity) {
+            return res.status(400).json({ message: 'Not sufficient items in stock.' });
         }
-        // Find the cart for the logged-in user
         const cart = await Cart.findOne({ where: { userId } });
         if (!cart) {
             return res.status(404).json({ message: 'Cart not found.' });
         }
-        // Create a cart item and associate it with the item and cart
-        const cartItem = await CartItem.create({ itemId, quantity, price: item.price });
-        await cart.addItem(cartItem);
+        const price = item.price;
+
+        const cartItem = await CartItem.create({
+            itemId: itemId,
+            quantity: quantity,
+            cartId: cart.id,
+            price: price  
+        });
+
         return res.json({ message: 'Item added to cart successfully.', cartItem });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: 'An error occurred while adding item to the cart.', error });
     }
 });
+
+
+
 
 // Update cart item quantity (accessible by Registered User)
 router.put('/cart_item/:id', authMiddleware, async (req, res) => {
@@ -98,13 +99,10 @@ router.put('/cart_item/:id', authMiddleware, async (req, res) => {
         // Find the cart item for the logged-in user
         const cartItem = await CartItem.findOne({
             where: {
-                id, '$cart.userId$': userId
+                id,
+                '$Cart.userId$': userId
             },
-            include: {
-                model: Cart,
-                as: 'cart',
-                where: { userId }
-            }
+            include: Cart
         });
         if (!cartItem) {
             return res.status(404).json({ message: 'Cart item not found.' });
@@ -114,8 +112,8 @@ router.put('/cart_item/:id', authMiddleware, async (req, res) => {
         if (!item) {
             return res.status(404).json({ message: 'Item not found.' });
         }
-        if (item.stock < quantity) {
-            return res.status(400).json({ message: 'Insufficient stock.' });
+        if (item.stock_quantity < quantity) {
+            return res.status(400).json({ message: 'Not sufficient items in stock.' });
         }
         // Update the cart item quantity
         cartItem.quantity = quantity;
@@ -127,22 +125,20 @@ router.put('/cart_item/:id', authMiddleware, async (req, res) => {
     }
 });
 
+
+
 // Delete cart item (accessible by Registered User)
 router.delete('/cart_item/:id', authMiddleware, async (req, res) => {
     try {
         const { userId } = req.user;
-        const { id } = req.params;
+        const itemId = req.params.id; // this id is the item's id
         // Find the cart item for the logged-in user
         const cartItem = await CartItem.findOne({
             where: {
-                id,
-                '$cart.userId$': userId
+                itemId, // changed from id to itemId
+                '$Cart.userId$': userId  // Changed 'cart' to 'Cart' to match alias in association
             },
-            include: {
-                model: Cart,
-                as: 'cart',
-                where: { userId }
-            }
+            include: Cart
         });
         if (!cartItem) {
             return res.status(404).json({ message: 'Cart item not found.' });
@@ -156,6 +152,7 @@ router.delete('/cart_item/:id', authMiddleware, async (req, res) => {
     }
 });
 
+
 // Delete entire cart (accessible by Registered User)
 router.delete('/cart/:id', authMiddleware, async (req, res) => {
     try {
@@ -166,7 +163,9 @@ router.delete('/cart/:id', authMiddleware, async (req, res) => {
         if (!cart) {
             return res.status(404).json({ message: 'Cart not found.' });
         }
-        // Delete the cart and associated cart items
+        // Delete the cart items associated with this cart
+        await CartItem.destroy({ where: { cartId: id } });
+        // Delete the cart
         await cart.destroy();
         return res.json({ message: 'Cart deleted successfully.' });
     } catch (error) {
@@ -174,5 +173,6 @@ router.delete('/cart/:id', authMiddleware, async (req, res) => {
         return res.status(500).json({ message: 'An error occurred while deleting cart.', error });
     }
 });
+
 
 module.exports = router;

@@ -14,13 +14,19 @@ module.exports = (sequelize, Sequelize) => {
         email: {
             type: Sequelize.STRING,
             allowNull: false,
-            unique: true,
+        },
+        salt: {
+            type: Sequelize.STRING,
+            allowNull: false,
+            defaultValue: function() {
+                return crypto.randomBytes(16).toString('hex');
+            },
         },
         password: {
             type: Sequelize.STRING,
             allowNull: false,
             set(value) {
-                const hash = crypto.createHash('sha256').update(value).digest('hex');
+                const hash = crypto.pbkdf2Sync(value, this.salt, 1000, 64, 'sha256').toString('hex');
                 this.setDataValue('password', hash);
             },
         }
@@ -30,7 +36,7 @@ module.exports = (sequelize, Sequelize) => {
 
     User.associate = function(models) {
         User.belongsTo(models.Role, { foreignKey: 'roleId' });
-        User.hasOne(models.Cart)
+        User.hasOne(models.Cart, { foreignKey: 'userId' });
         User.hasMany(models.Order);
     };
 

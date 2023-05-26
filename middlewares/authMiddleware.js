@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { User, Role } = require('../models');
 
 const authMiddleware = async (req, res, next) => {
     try {
@@ -15,11 +15,17 @@ const authMiddleware = async (req, res, next) => {
                 return res.status(403).send('Invalid token');
             }
             // Registered User or Admin User
-            const dbUser = await User.findByPk(user.id);
+            const dbUser = await User.findByPk(user.id, {
+                include: [{ model: Role, as: 'Role' }] 
+            });
             if (!dbUser) {
                 return res.status(404).send('User not found');
             }
-            req.user = { id: dbUser.id, role: dbUser.roleId };
+            req.user = { 
+                id: dbUser.id, 
+                role: dbUser.Role ? dbUser.Role.name : 'User', 
+                userId: dbUser.id 
+            };
             next();
         });
     } catch (error) {

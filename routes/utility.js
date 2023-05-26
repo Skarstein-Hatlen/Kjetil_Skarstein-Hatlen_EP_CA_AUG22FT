@@ -19,7 +19,7 @@ router.post('/setup', async (req, res) => {
 
         console.log('Items Data: ', itemsData);
         for (const itemData of itemsData.data) {
-            const { id, item_name, price, stock_quantity: stock, category } = itemData;
+            const { id, item_name, price, stock_quantity, sku, category } = itemData;
             const [categoryObj] = await Category.findOrCreate({
                 where: { name: category },
             });
@@ -27,7 +27,8 @@ router.post('/setup', async (req, res) => {
                 id,
                 name: item_name,
                 price,
-                stock,
+                stock_quantity,
+                sku,
                 categoryId: categoryObj.id,
             });
         }
@@ -42,7 +43,7 @@ router.post('/setup', async (req, res) => {
             return res.status(500).json({ message: 'Admin role not found.' });
         }
 
-        const hashedPassword = crypto.createHash('sha256').update('P@ssword2023').digest('hex');
+        const hashedPassword = 'P@ssword2023'; 
         await User.create({
             fullName: 'Admin User',
             username: 'Admin',
