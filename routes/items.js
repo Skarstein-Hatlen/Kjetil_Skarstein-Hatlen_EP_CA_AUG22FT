@@ -16,7 +16,7 @@ router.get('/items', async (req, res) => {
     }
 });
 
-// Create a new item (accessible by Admin User)
+// Create a new item (Admin User)
 router.post('/item', authMiddleware, authRole('Admin'), async (req, res) => {
     try {
         const { name, price, sku, stock_quantity, categoryId } = req.body;
@@ -28,11 +28,12 @@ router.post('/item', authMiddleware, authRole('Admin'), async (req, res) => {
         }
 
         // Create the item
-        const item = await category.createItem({
+        const item = await Item.create({
             name,
             price,
             sku,
-            stock_quantity
+            stock_quantity,
+            categoryId
         });
 
         res.json(item);
@@ -44,7 +45,7 @@ router.post('/item', authMiddleware, authRole('Admin'), async (req, res) => {
 
 
 
-// Update an existing item (accessible by Admin User)
+// Update an existing item (Admin User)
 router.put('/item/:id', authMiddleware, authRole('Admin'), async (req, res) => {
     try {
         const { id } = req.params;
@@ -70,7 +71,7 @@ router.put('/item/:id', authMiddleware, authRole('Admin'), async (req, res) => {
 });
 
 
-// Delete an item (accessible by Admin User)
+// Delete an item (Admin User)
 router.delete('/item/:id', authMiddleware, authRole('Admin'), async (req, res) => {
     try {
         const { id } = req.params;
