@@ -4,16 +4,17 @@ const { Op } = require('sequelize');
 const { Order, OrderItem, Item, User, Cart, CartItem, sequelize } = require('../models');
 const authMiddleware = require('../middlewares/authMiddleware');
 
-// Checkout (Registered User)
+const discountMap = {
+    2: 0.1,
+    3: 0.3,
+    4: 0.4,
+};
+
+
+// Checkout entire cart (Registered User)
 router.post('/checkout', authMiddleware, async (req, res) => {
     try {
         const { userId } = req.user;
-        const discountMap = {
-            2: 0.1,
-            3: 0.3,
-            4: 0.4,
-        };
-        // Find the user's cart
         const cart = await Cart.findOne({
             where: { userId },
             include: {
@@ -25,7 +26,7 @@ router.post('/checkout', authMiddleware, async (req, res) => {
         if (!cart) {
             return res.status(404).json({ message: 'Cart not found.' });
         }
-        // Discount based on the number of users with the same email
+        // Discount based on the number of users with same email
         const user = await User.findByPk(userId);
         const usersWithSameEmail = await User.count({
             where: {
@@ -33,10 +34,10 @@ router.post('/checkout', authMiddleware, async (req, res) => {
             },
         });
         let totalDiscount = discountMap[usersWithSameEmail] || 0;
-        // Create the order
+        // Create order
         const order = await Order.create({ status: 'Pending', UserId: userId, totalPrice: 0 });
         let totalPriceBeforeDiscount = 0;
-        // Loop through the cart items and create order items
+        // Loop through cart items and create order items
         for (const cartItem of cart.cartItems) {
             const item = cartItem.Item;
             if (item.stock_quantity < cartItem.quantity) {
@@ -51,16 +52,16 @@ router.post('/checkout', authMiddleware, async (req, res) => {
                 quantity: cartItem.quantity,
                 price: itemPrice
             });
-            // Update the item's stock level
+            // Update item's stock level
             item.stock_quantity -= cartItem.quantity;
             await item.save();
         }
         let totalPrice = totalPriceBeforeDiscount * (1 - totalDiscount);
         order.totalPrice = totalPrice;
         await order.save();
-        // Delete the cart items associated with cart
+        // Delete cart items associated with cart
         await CartItem.destroy({ where: { cartId: cart.id } });
-        // Delete the cart
+        // Delete cart
         await cart.destroy();
         return res.json({ message: 'Order created successfully.', order, totalPriceBeforeDiscount, discount: totalDiscount, totalPrice });
     } catch (error) {
@@ -70,14 +71,10 @@ router.post('/checkout', authMiddleware, async (req, res) => {
 });
 
 
-
-
-
 // Get orders for logged-in user (Registered User)
 router.get('/orders', authMiddleware, async (req, res) => {
     try {
         const { userId } = req.user;
-        // Find orders for the logged-in user
         const orders = await Order.findAll({
             where: { userId },
             include: { model: OrderItem, include: Item },
@@ -90,6 +87,7 @@ router.get('/orders', authMiddleware, async (req, res) => {
     }
 });
 
+
 // Get all orders (Admin User)
 router.get('/allorders', authMiddleware, async (req, res) => {
     try {
@@ -97,7 +95,6 @@ router.get('/allorders', authMiddleware, async (req, res) => {
         if (role !== 'Admin') {
             return res.status(403).json({ message: 'Access denied. Only Admin User can access this endpoint.' });
         }
-        // Raw SQL query to get all orders with items and user information
         const query = `
             SELECT
                 o.id AS order_id,
@@ -121,7 +118,6 @@ router.get('/allorders', authMiddleware, async (req, res) => {
             ORDER BY
                 o.createdAt DESC
         `;
-        // Execute the raw query
         const rawOrders = await sequelize.query(query, { type: sequelize.QueryTypes.SELECT });
         const orderMap = rawOrders.reduce((acc, order) => {
             const {
@@ -162,35 +158,59 @@ router.get('/allorders', authMiddleware, async (req, res) => {
 });
 
 
-
-
-
 // Create order (Registered User)
 router.post('/order/:id', authMiddleware, async (req, res) => {
     try {
         const { userId } = req.user;
         const { id } = req.params;
+        const cart = await Cart.findOne({
+            where: { userId },
+            include: {
+                model: CartItem,
+                as: 'cartItems',
+                where: { itemId: id },
+            },
+        });
+        if (!cart || cart.cartItems.length === 0) {
+            return res.status(404).json({ message: 'Item not found in cart.' });
+        }
+        // Get the cart item details
+        const cartItem = cart.cartItems[0];
+        const itemQuantity = cartItem.quantity;
+        const itemPrice = cartItem.price;
+        const totalPriceBeforeDiscount = itemPrice * itemQuantity;
         // Find the item being ordered
         const item = await Item.findOne({ where: { id } });
         if (!item) {
             return res.status(404).json({ message: 'Item not found.' });
         }
-        if (item.stock_quantity === 0) {
-            return res.status(400).json({ message: 'Item out of stock.' });
+        if (item.stock_quantity < itemQuantity) {
+            return res.status(400).json({ message: `Not sufficient items in stock for ${item.name}.` });
         }
+        // Discount based on the number of users with the same email
+        const user = await User.findByPk(userId);
+        const usersWithSameEmail = await User.count({
+            where: {
+                email: user.email,
+            },
+        });
+        let totalDiscount = discountMap[usersWithSameEmail] || 0;
+        let totalPrice = totalPriceBeforeDiscount * (1 - totalDiscount);
         // Create the order
-        const order = await Order.create({ status: 'Pending', userId });
-        // Create the order item with the item price
+        const order = await Order.create({ status: 'Pending', UserId: userId, totalPrice: totalPrice });
+        // Create the order item with the item price and quantity from the cart
         await OrderItem.create({
             orderId: order.id,
             itemId: item.id,
-            quantity: 1,
-            price: item.price
+            quantity: itemQuantity,
+            price: itemPrice
         });
         // Update the item's stock level
-        item.stock_quantity -= 1;
+        item.stock_quantity -= itemQuantity;
         await item.save();
-        return res.json({ message: 'Order created successfully.', order });
+        // Delete the cart item
+        await CartItem.destroy({ where: { id: cartItem.id } });
+        return res.json({ message: 'Order created successfully.', order, totalPriceBeforeDiscount, discount: totalDiscount, totalPrice });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: 'An error occurred while creating the order.', error });
@@ -207,6 +227,10 @@ router.put('/order/:id', authMiddleware, async (req, res) => {
         }
         const { id } = req.params;
         const { status } = req.body;
+        const validStatus = ['In Process', 'Complete', 'Cancelled'];
+        if (!validStatus.includes(status)) {
+            return res.status(400).json({ message: 'Invalid status value. Valid values are In Process, Complete, Cancelled.' });
+        }
         const order = await Order.findByPk(id);
         if (!order) {
             return res.status(404).json({ message: 'Order not found.' });
@@ -219,5 +243,6 @@ router.put('/order/:id', authMiddleware, async (req, res) => {
         return res.status(500).json({ message: 'An error occurred while updating the order status.', error });
     }
 });
+
 
 module.exports = router;

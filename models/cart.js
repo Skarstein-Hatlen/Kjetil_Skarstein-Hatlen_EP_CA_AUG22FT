@@ -1,4 +1,3 @@
-// cart.js
 module.exports = (sequelize, Sequelize) => {
   const Cart = sequelize.define('Cart', {},{
       timestamps: true

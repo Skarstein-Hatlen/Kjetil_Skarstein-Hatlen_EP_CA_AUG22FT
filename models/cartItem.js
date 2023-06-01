@@ -35,6 +35,8 @@ module.exports = (sequelize, Sequelize) => {
     },{
         timestamps: true
     });
+    
+    // Relationships
     CartItem.associate = function(models) {
         CartItem.belongsTo(models.Cart, { foreignKey: 'cartId' });
         CartItem.belongsTo(models.Item, { foreignKey: 'itemId' });

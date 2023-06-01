@@ -1,12 +1,11 @@
 var express = require('express');
 var router = express.Router();
-var { Category } = require('../models');
-
-// Authentication and role check middleware
+var { Category, Item } = require('../models');
 const authenticate = require('../middlewares/authMiddleware');
 const authRole = require('../middlewares/authRole');
 
-// GET/categories - Returns all categories in the database
+
+// Return all categories in database
 router.get('/categories', async (req, res) => {
     try {
         const categories = await Category.findAll();
@@ -17,7 +16,8 @@ router.get('/categories', async (req, res) => {
     }
 });
 
-// POST/category - Creates new category
+
+// Create new category (Admin user)
 router.post('/category', authenticate, authRole('Admin'), async (req, res) => {
     try {
         const { name } = req.body;
@@ -34,6 +34,7 @@ router.post('/category', authenticate, authRole('Admin'), async (req, res) => {
 });
 
 
+// Update category name (Admin user)
 router.put('/category/:id', authenticate, authRole('Admin'), async (req, res) => {
     try {
         const { id } = req.params;
@@ -50,6 +51,8 @@ router.put('/category/:id', authenticate, authRole('Admin'), async (req, res) =>
     }
 });
 
+
+// Delete category (Admin user)
 router.delete('/category/:id', authenticate, authRole('Admin'), async (req, res) => {
     const { id } = req.params;
     const category = await Category.findByPk(id);

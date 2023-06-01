@@ -1,4 +1,3 @@
-// index.js file
 const Sequelize = require('sequelize')
 const fs = require("fs")
 const path = require("path")
@@ -14,7 +13,6 @@ const connection = {
     dialectmodel: process.env.DIALECTMODEL,
 };
 
-//Connect
 const sequelize = new Sequelize(connection);
 
 const db = {}

@@ -1,4 +1,3 @@
-// orderItems.js
 module.exports = (sequelize, Sequelize) => {
     const OrderItem = sequelize.define('OrderItem', {
         quantity: {
@@ -28,7 +27,8 @@ module.exports = (sequelize, Sequelize) => {
     },{
         timestamps: true
     });
-
+    
+    // Relationships
     OrderItem.associate = function(models) {
         OrderItem.belongsTo(models.Item, { foreignKey: 'itemId' }); 
         OrderItem.belongsTo(models.Order, { foreignKey: 'orderId' }); 

@@ -43,7 +43,7 @@ router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
 
-        // Fetch the user from the database and include the Role model
+        // Fetch user from database and include Role
         const user = await User.findOne({ 
             where: { username }, 
             include: {
@@ -54,10 +54,10 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ message: 'Invalid username or password.' });
         }
 
-        // Use the salt to hash the input password
+        // Use salt to hash the password
         const hashedPassword = crypto.pbkdf2Sync(password, user.salt, 1000, 64, 'sha256').toString('hex');
 
-        // Check if the hashed input password matches the stored hash
+        // Check if the hashed password matches the stored hash
         if (hashedPassword !== user.password) {
             return res.status(401).json({ message: 'Invalid username or password.' });
         }
