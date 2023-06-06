@@ -1,10 +1,17 @@
 # Kjetil_Skarstein-Hatlen_EP_CA_AUG22FT
 
+## Description
+This is an e-commerce backend API project of an online store, built with Node.js, Express.js, MySQL, and Sequelize. 
+The application provides a set of endpoints to facilitate user authentication, product browsing, cart management, and order placement. 
+It also includes special functionality for admin users, such as managing product listings, reviewing orders and many more. 
+The project incorporates JWT for user authentication. Testing is facilitated with Jest and Supertest. 
+It's a compact demonstration of my skills in backend development.
+
 
 ## Installation and usage
 1. Open terminal and run this command ```git clone https://github.com/Skarstein-Hatlen/Kjetil_Skarstein-Hatlen_DAB_CA_AUG22FT```
 2. Create a .env file in the root directory with the required environment variables (see the "ENV configuration" section below).
-3. Start server by running ```npm install``` in the terminal.
+3. Start server by running ```npm install``` in the terminal.(This will add the database schmea and tables.)
 4. Use an API client like Postman to interact with the API. You can find the API documentation PDF in the documentation folder.
 2. Use the /setup endpoint in postman to populate the database and add Admin user.
 5. Use Signup to create a user and Login to get the Bearer Token.
@@ -13,9 +20,27 @@
 
 
 ## Unit testing
-1. Remember that tables neds to be created before testing, tables will automatically be created when running npm start
+1. Remember that tables needs to be created before testing, tables will automatically be created when running npm start in terminal.
 2. Run npm test
 3. Test result will now be displayed in the console.
+
+
+## Dependencies
+- bcrypt: Hashing passwords securely.
+- body-parser: Handle HTTP POST request in Express.js.
+- cookie-parser: Parse cookie header and populate req.cookies with an object keyed by the cookie names.
+- debug: node.js debugging utility.
+- dotenv: Loads environment variables from .env file into process.env.
+- ejs: HTML markup with plain JavaScript.
+- express: Web framework for Node.js.
+- http-errors: Create HTTP error objects.
+- jsonwebtoken: JSON Web Tokens for securely transmitting information between parties.
+- morgan: HTTP request logger for Node.js.
+- mysql2: MySQL client for Node.js.
+- node-fetch: For making server-side web API calls.
+- sequelize: ORM tool for MySQL.
+- jest: JavaScript testing framework.
+- supertest: Library for testing Node.js servers.
 
 
 ## Endpoints
@@ -99,6 +124,7 @@ Partial item name, Specific category
 - Noroff - Modules from the BED courses.
 - Stackoverflow - Finding different solutions when stuck.
 - Youtube - For same reason as Stackoverflor, see different solutions when stuck.
+- Google - Searching up solutions when stuck or unsure.
 - Chatgpt - Finding minor syntax when stuck.
 
 
@@ -110,4 +136,4 @@ Partial item name, Specific category
 - DIALECTMODEL = "mysql2"
 - PORT = "3000"
 - HOST = "localhost"
-- JWT_SECRET = {your_secret_token}
+- JWT_SECRET = "2839934343ad7bac8f39e2c2bc83bba92978ef8695fa4a5cd00b94bc86d830bc"
