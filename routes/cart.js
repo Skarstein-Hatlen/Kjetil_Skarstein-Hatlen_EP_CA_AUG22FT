@@ -85,23 +85,27 @@ router.post('/cart_item', authMiddleware, async (req, res) => {
 
 
 // Update cart item quantity (Registered User)
-router.put('/cart_item/:id', authMiddleware, async (req, res) => {
+router.put('/cart_item/:itemId', authMiddleware, async (req, res) => {
     try {
         const { userId } = req.user;
-        const { id } = req.params;
+        const { itemId } = req.params;
         const { quantity } = req.body;
+        const userCart = await Cart.findOne({ where: { userId } });
+        if (!userCart) {
+            return res.status(404).json({ message: 'Cart not found.' });
+        }
+        // Find the cart item related to this item and user's cart
         const cartItem = await CartItem.findOne({
             where: {
-                id,
-                '$Cart.userId$': userId
-            },
-            include: Cart
+                itemId,
+                cartId: userCart.id,
+            }
         });
         if (!cartItem) {
             return res.status(404).json({ message: 'Cart item not found.' });
         }
         // Check if item are in stock
-        const item = await Item.findOne({ where: { id: cartItem.itemId } });
+        const item = await Item.findOne({ where: { id: itemId } });
         if (!item) {
             return res.status(404).json({ message: 'Item not found.' });
         }
@@ -117,6 +121,7 @@ router.put('/cart_item/:id', authMiddleware, async (req, res) => {
         return res.status(500).json({ message: 'An error occurred while updating cart item quantity.', error });
     }
 });
+
 
 
 
@@ -144,7 +149,7 @@ router.delete('/cart_item/:id', authMiddleware, async (req, res) => {
 });
 
 
-// Delete entire cart (Registered User)
+// Delete all items in cart (Registered User)
 router.delete('/cart/:id', authMiddleware, async (req, res) => {
     try {
         const { userId } = req.user;
@@ -154,13 +159,14 @@ router.delete('/cart/:id', authMiddleware, async (req, res) => {
             return res.status(404).json({ message: 'Cart not found.' });
         }
         await CartItem.destroy({ where: { cartId: id } });
-        await cart.destroy();
-        return res.json({ message: 'Cart deleted successfully.' });
+        return res.json({ message: 'Items in the cart deleted successfully.' });
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ message: 'An error occurred while deleting cart.', error });
+        return res.status(500).json({ message: 'An error occurred while deleting items in the cart.', error });
     }
 });
+
+
 
 
 module.exports = router;

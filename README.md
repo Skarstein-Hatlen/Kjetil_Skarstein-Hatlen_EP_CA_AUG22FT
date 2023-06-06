@@ -37,7 +37,7 @@
 - DELETE /category/:id - Deletes a category from the database.
 
 #### Cart
-- GET /cart - Retrieves the cart for the logged-in user.
+- GET /cart - Retrieves cart for the logged-in user.
 - GET /allcarts - Retrieves all existing carts, including their items and user information.
 - POST /cart_item - Adds an item to the user's cart.
 - PUT /cart_item/:id - Updates the quantity of a specific item in the user's cart.
@@ -47,6 +47,7 @@
 #### Orders
 - GET /orders - Retrieves orders for the logged-in user.
 - GET /allorders - Retrieves all existing orders, including items and user information.
+- POST /checkout - Place an order for the entire user's cart
 - POST /order/:id - Places an order for an item in the user's cart.
 - PUT /order/:id - Updates the status of an order.
 
@@ -54,6 +55,44 @@
 - POST /setup - Populates the database with initial data and creates an admin user.
 - POST /search - Searches for items in the database based on specified criteria.
 
+
+## Documnetation
+Most of the documentation will be found in the documentation folder in the root folder.
+However I will leave a link to the Postmand documentation here because of the examples i made for some of the endpoints.
+The examples are not shown in the PDF for some reason.
+
+Documentation link:
+https://documenter.getpostman.com/view/25216429/2s93sW7a5f
+
+Examples for the search endpoint found in the documentation:
+
+Partial item name
+```
+{
+    "searchQuery": "top"
+}
+```
+
+Specific category
+```
+{
+    "categoryName": "Toys"
+}
+```
+Specific SKU
+```
+{
+    "sku": "KT125"
+}
+```
+
+Partial item name, Specific category
+```
+{
+    "searchQuery": "ball",
+    "categoryName": "Sporting Goods"
+}
+```
 
 
 ## Acknowledgment
@@ -71,4 +110,4 @@
 - DIALECTMODEL = "mysql2"
 - PORT = "3000"
 - HOST = "localhost"
-- JWT_SECRET = "2839934343ad7bac8f39e2c2bc83bba92978ef8695fa4a5cd00b94bc86d830bc"
+- JWT_SECRET = {your_secret_token}

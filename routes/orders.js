@@ -74,18 +74,23 @@ router.post('/checkout', authMiddleware, async (req, res) => {
 // Get orders for logged-in user (Registered User)
 router.get('/orders', authMiddleware, async (req, res) => {
     try {
-        const { userId } = req.user;
-        const orders = await Order.findAll({
-            where: { userId },
-            include: { model: OrderItem, include: Item },
+        const { userId, role } = req.user;
+        const orderQuery = { 
+            include: { model: OrderItem, include: Item }, 
             order: [['createdAt', 'DESC']]
-        });
+        };
+        if (role !== 'Admin') {
+            orderQuery.where = { userId };
+        }
+        const orders = await Order.findAll(orderQuery);
         return res.json({ orders });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: 'An error occurred while retrieving orders.', error });
     }
 });
+
+
 
 
 // Get all orders (Admin User)
